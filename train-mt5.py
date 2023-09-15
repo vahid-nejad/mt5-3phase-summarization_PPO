@@ -59,12 +59,17 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
 print("preproccing done")
 print("Loading the model ")
-model=torch.load("mymodel")
+model=torch.load("mymodel") #load mT5 model form local
 print("Model Loaded")
 
 
 #model= model.to(device)
+for name, param in model.named_parameters():
+    if 'bias' in name:
+        param.requires_grad = False
 
+for name, param in model.base_model.encoder.named_parameters():
+    param.requires_grad = False
 
 from transformers import Seq2SeqTrainingArguments,Seq2SeqTrainer
 from datasets import load_metric
@@ -129,9 +134,90 @@ trainer = Seq2SeqTrainer(
 )
 
 
-print("start training")
+print("start training encoder")
 
 trainer.train()
+
+
+for name, param in model.base_model.encoder.named_parameters():
+    param.requires_grad = True
+
+for name, param in model.base_model.decoder.named_parameters():
+    param.requires_grad = False
+
+for name, param in model.named_parameters():
+    if 'bias' in name:
+        param.requires_grad = False
+
+
+training_args = Seq2SeqTrainingArguments(
+    "test-trainer",
+    evaluation_strategy = "epoch",
+    learning_rate=LEARNING_RATE,
+    per_device_train_batch_size=BATCH_SIZE,
+    per_device_eval_batch_size=BATCH_SIZE,
+    weight_decay=0.01,
+    save_total_limit=3,
+    num_train_epochs=MAX_EPOCHS,
+    predict_with_generate=True,
+    
+   
+)
+
+
+
+trainer = Seq2SeqTrainer(
+    model,
+    training_args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["evaluation"],
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+    compute_metrics=metric_fn
+)
+
+trainer.train()
+
+for name, param in model.base_model.encoder.named_parameters():
+    param.requires_grad = False
+
+for name, param in model.base_model.decoder.named_parameters():
+    param.requires_grad = False
+
+for name, param in model.named_parameters():
+    if 'bias' in name:
+        param.requires_grad = True
+
+
+training_args = Seq2SeqTrainingArguments(
+    "test-trainer",
+    evaluation_strategy = "epoch",
+    learning_rate=LEARNING_RATE,
+    per_device_train_batch_size=BATCH_SIZE,
+    per_device_eval_batch_size=BATCH_SIZE,
+    weight_decay=0.01,
+    save_total_limit=3,
+    num_train_epochs=MAX_EPOCHS,
+    predict_with_generate=True,
+    
+   
+)
+
+
+
+trainer = Seq2SeqTrainer(
+    model,
+    training_args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["evaluation"],
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+    compute_metrics=metric_fn
+)
+
+trainer.train()
+
+
 
 torch.save(model,"./models/mt5_finetuend.pth")
 
