@@ -27,8 +27,8 @@ print("hi")
 
 config = TRLConfig(
     train=TrainConfig(
-        seq_length=612,
-        epochs=3,
+        seq_length=1024,
+        epochs=1,
         total_steps=100000,
         batch_size=1,
         checkpoint_interval=10000,
@@ -121,14 +121,14 @@ if __name__ == "__main__":
     dataset = load_dataset("pn_summary")
 
     # take 20,000 samples from the training set as prompts for training
-    prompts = dataset["train"]["article"][0:20000]
-    summaries = dataset["train"]["summary"][0:20000]
+    prompts = dataset["train"]["article"][:]
+    summaries = dataset["train"]["summary"][:]
     prompts = ["Summarize: " + prompt for prompt in prompts]
 
     # take 1,000 samples from the validation set as prompts for evaluation
     val_prompts = ["Summarize: " +
-                   prompt for prompt in dataset["validation"]["article"][0:1000]]
-    val_summaries = dataset["validation"]["summary"][0:1000]
+                   prompt for prompt in dataset["validation"]["article"][:]]
+    val_summaries = dataset["validation"]["summary"][:]
 
     # make dictionary of prompts and labels to use for reward function
     tokenizer = AutoTokenizer.from_pretrained(config.model.model_path)
